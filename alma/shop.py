@@ -1,8 +1,15 @@
-from alma.message.message import FinishedMineMessage, MineMessage, TypeMessage
+from alma.message.message import (
+    FinishedJoinMessage,
+    FinishedMineMessage,
+    JoinFooBarMessage,
+    MineMessage,
+    TypeMessage,
+)
 from alma.message.message_queue import ShopMessageQueue
 from alma.robot import Robot
 
-class Inventory():
+
+class Inventory:
     def __init__(self) -> None:
         self.foo = list()
         self.bar = list()
@@ -11,18 +18,19 @@ class Inventory():
 
 class Shop:
     """
-        Main class that contais all functions and properties to run the shop.
-        Including the Inventory class, that contains the different objects that
-            are on stocks and the datastructure of messageQueue
+    Main class that contais all functions and properties to run the shop.
+    Including the Inventory class, that contains the different objects that
+        are on stocks and the datastructure of messageQueue
     """
+
     def __init__(self, speed: int) -> None:
         """
-            Constructor of the class
+        Constructor of the class
 
-            It will initialize all variables
+        It will initialize all variables
 
-            - Inventory
-            - Channels to comunicate
+        - Inventory
+        - Channels to comunicate
         """
         self.inventory = Inventory()
         self.message_queue = ShopMessageQueue()
@@ -31,37 +39,54 @@ class Shop:
         self.money = 0
         # We start with two robots
         self.buy_new_robot()
+        self.buy_new_robot()
 
     def run(self):
         """
-            Method that runs the shop
+        Method that runs the shop
         """
         while True:
             self.print_to_console("waiting to receive message")
             message = self.message_queue.wait_message_from_robots()
-            self.print_to_console(message)
             if isinstance(message, FinishedMineMessage):
                 self.process_receive_mine_message(message)
-                self.send_next_job(message.id_robot)
+            elif isinstance(message, FinishedJoinMessage):
+                self.process_receive_join_foobar_message(message)
             else:
                 continue
+            self.send_next_job(message.id_robot)
             self.print_inventory()
 
     def process_receive_mine_message(self, message: FinishedMineMessage):
         """
-            Method to process the foo received
+        Method to process the foo received
         """
         if message.type_message == TypeMessage.job_finished_foo:
-            self.print_to_console(f"received foo {message.id_object} from worker {message.id_robot}")
+            self.print_to_console(
+                f"received foo {message.id_object} from worker {message.id_robot}"
+            )
             self.inventory.foo.append(message.id_object)
         else:
             self.inventory.bar.append(message.id_object)
 
+    def process_receive_join_foobar_message(self, message: FinishedJoinMessage):
+        """
+        Method to procede the foobar received
+        """
+        if message.is_finished_succesfully:
+            self.inventory.foobar.append(message.id_object)
+        else:
+            self.inventory.foo.append(message.id_object)
+
     def send_next_job(self, id_robot):
         """
-            Method that decides what task will do later
+        Method that decides what task will do later
         """
-        if len(self.inventory.foo) < 10:
+        if len(self.inventory.bar) > 0 and len(self.inventory.foo) > 0:
+            foo = self.inventory.foo.pop()
+            bar = self.inventory.bar.pop()
+            message = JoinFooBarMessage(foo, bar)
+        elif len(self.inventory.foo) < 10:
             message = MineMessage(TypeMessage.send_job_create_foo)
         else:
             message = MineMessage(TypeMessage.send_job_create_bar)
@@ -69,9 +94,10 @@ class Shop:
 
     def buy_new_robot(self):
         """
-            Method that provides the shop the hability to buy robots
+        Method that provides the shop the hability to buy robots
         """
         id_robot = self.robot_counter
+        self.robot_counter += 1
         shop_queue = self.message_queue.get_shop_queue()
         robot_queue = self.message_queue.get_robot_queue(id_robot)
         robot = Robot(id_robot, robot_queue, shop_queue, self.speed)
@@ -80,7 +106,7 @@ class Shop:
 
     def print_inventory(self):
         """
-            Method that prints the inventory every time we receive a message
+        Method that prints the inventory every time we receive a message
         """
         print(f"------ SHOP UPDATE -------")
         print(f"foo: {len(self.inventory.foo)}")
@@ -91,7 +117,6 @@ class Shop:
 
     def print_to_console(self, console_message: str):
         """
-            Logging method
+        Logging method
         """
         print(f"SHOP: {console_message}")
-

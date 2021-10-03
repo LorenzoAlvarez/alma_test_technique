@@ -1,7 +1,7 @@
 from threading import Thread
 from queue import Queue
 from enum import Enum
-from alma.message.message import MineMessage, TypeMessage, FinishedMineMessage
+from alma.message.message import FinishedJoinMessage, JoinFooBarMessage, MineMessage, TypeMessage, FinishedMineMessage
 import random
 import time
 
@@ -29,6 +29,7 @@ class Robot(Thread):
     TIME_MINE_BAR_MAXIMUM = 2
     TIME_JOIN_FOO_BAR = 2
     TIME_SELL = 10
+    PERCENT_SUCCESSFUL_CREATION_FOOBAR = 60
 
     def __init__(self, id_robot, in_queue: Queue, out_queue: Queue, speed: int) -> None:
         super(Robot, self).__init__()
@@ -50,6 +51,11 @@ class Robot(Thread):
                     self.send_foo_to_shop(self.process_foo())
                 else:
                     self.send_bar_to_shop(self.process_bar())
+            elif isinstance(message, JoinFooBarMessage):
+                id_foo = message.id_foo
+                id_bar = message.id_bar
+                is_succesfully_done, id_object = self.process_foobar(id_foo, id_bar)
+                self.send_foobar_to_shop(is_succesfully_done, id_object)
         return
 
     def process_foo(self):
@@ -79,6 +85,7 @@ class Robot(Thread):
         self.print_to_console("Process Bar")
         # If we change task, wait 5 units of times
         if self.last_task is not None and self.last_task != TypeTask.mine_bar:
+            
             time.sleep(self.TIME_CHANGE_ACTIVITY / self.speed)
         # mine bar cost between 0.5 and 2 units of time
         time.sleep(
@@ -88,6 +95,17 @@ class Robot(Thread):
         id_bar = f"{self.id_robot}{self.counter_bar}"
         self.counter_bar += 1
         self.print_to_console(f"Creating Bar {id_bar}")
+
+    def process_foobar(self, id_foo: str, id_bar: str):
+        self.print_to_console("Process FooBar")
+        if self.last_task is not None and self.last_task != TypeTask.join_foobar:
+            time.sleep(self.TIME_CHANGE_ACTIVITY / self.speed)
+
+        time.sleep(self.TIME_JOIN_FOO_BAR / self.speed)
+        succesfully_created = random.uniform(0, 100) > self.PERCENT_SUCCESSFUL_CREATION_FOOBAR
+        id_object = f"{id_foo}{id_bar}" if succesfully_created else id_foo
+        self.print_to_console(f"Creating Foobar -> {'Success' if succesfully_created else 'Failed'}")
+        return succesfully_created, id_object
 
     def send_foo_to_shop(self, id_foo: str):
         """
@@ -110,6 +128,20 @@ class Robot(Thread):
         self.print_to_console(f"Send Bar {id_bar} to Shop")
         message_to_send = FinishedMineMessage(
             TypeMessage.job_finished_bar, self.id_robot, id_bar
+        )
+        self.out_queue.put(message_to_send)
+
+    def send_foobar_to_shop(self, is_finished_succesfully: bool, id_object: str):
+        """
+        Method called after generating a foobar
+
+        Send the foo or foobar to the shop
+        """
+        self.print_to_console(f"Send Foo or FooBar {id_object} to Shop")
+        message_to_send = FinishedJoinMessage(
+            self.id_robot,
+            is_finished_succesfully,
+            id_object
         )
         self.out_queue.put(message_to_send)
 
