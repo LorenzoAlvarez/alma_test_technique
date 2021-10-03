@@ -1,7 +1,8 @@
 import pytest
-from alma.message import (JoinFooBarMessage, MineMessage,
-                          NotSupportedTypeMessageException, SellMessage, TypeMessage,
-                          NotValidNumberFoosToSellException)
+from alma.message.message import (MineMessage,
+                                  NotSupportedTypeMessageException,
+                                  SellMessage, TypeMessage,
+                                  NotValidNumberFoosToSellException)
 
 
 def test_create_mine_message_not_valid():

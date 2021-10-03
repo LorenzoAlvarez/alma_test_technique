@@ -12,6 +12,4 @@ if __name__ == "__main__":
             sys.exit("The parameter should be a number between a 1 and 5")
     else:
         sys.exit("The script works without parameters or just one")
-    
-
 
