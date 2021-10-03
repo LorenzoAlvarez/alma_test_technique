@@ -29,10 +29,9 @@ class MessageQueue(ABC):
         self._channels[key] = Queue()
 
     def get_channel(self, key) -> Queue:
-        try:
-            return self._channels[key]
-        except KeyError:
-            raise ChannelDoesntExistException(f"Channel {key} do not exist")
+        if key not in self._channels:
+            self.initialize_channel(key)
+        return self._channels[key]
 
     def put_item(self, key, item):
         try:
@@ -42,7 +41,7 @@ class MessageQueue(ABC):
 
     def get_item(self, key):
         try:
-            self._channels[key].get()
+            return self._channels[key].get()
         except KeyError:
             raise ChannelDoesntExistException(f"Channel {key} do not exist")
 
@@ -81,7 +80,7 @@ class ShopMessageQueue(MessageQueue):
         """
         return self.get_channel(id_robot)
 
-    def wait_for_message_from_robots(self) -> BaseMessage:
+    def wait_message_from_robots(self) -> BaseMessage:
         """
             Method to get a message sent by a robot
         """

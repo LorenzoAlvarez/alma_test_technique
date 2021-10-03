@@ -125,18 +125,18 @@ class FinishedMineMessage(BaseMessage):
         - We should save the id of the object created, so the owner can take it
             and save it on the shop properly
     """
-    def __init__(self, type_message: TypeMessage, id_worker: int, id_object_created: str):
+    def __init__(self, type_message: TypeMessage, id_robot: int, id_object_created: str):
         """
             Constructor of the class
         """
         available_messages = [
-            TypeMessage.send_job_create_foo,
-            TypeMessage.send_job_create_bar,
+            TypeMessage.job_finished_foo,
+            TypeMessage.job_finished_bar,
         ]
         if type_message not in available_messages:
             raise NotSupportedTypeMessageException
         super().__init__(type_message)
-        self.worker = id_worker
+        self.id_robot = id_robot
         self.id_object = id_object_created
 
 
@@ -151,14 +151,14 @@ class FinishedJoinMessage(BaseMessage):
         Also we should save the id, so the shop can save it into the stock
     """
     def __init__(self,
-                 id_worker: int,
+                 id_robot: int,
                  is_finished_succesfully: bool,
                  id_object: str):
         """
             Constructor of the class
         """
         super().__init__(TypeMessage.job_finished_join)
-        self.worker = id_worker
+        self.id_robot = id_robot
         self.is_finished_succesfully = is_finished_succesfully
         self.id_object = id_object
 
@@ -174,13 +174,13 @@ class FinishedSellMessage(BaseMessage):
             by the sale
     """
     def __init__(self,
-                 id_worker: int,
+                 id_robot: int,
                  amout_of_money_gained: int):
         """
             Constructor of the class
         """
         super().__init__(TypeMessage.job_finished_sell)
-        self.worker = id_worker
+        self.worker = id_robot
         self.amount = amout_of_money_gained
 
 
@@ -200,5 +200,5 @@ class RobotIsOff(BaseMessage):
 
         this message is sent from the robot to the shop, when the robot is off
     """
-    def __init__(self, id_worker: int):
+    def __init__(self, id_robot: int):
         super().__init__(TypeMessage.turn_off_done)

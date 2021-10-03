@@ -1,4 +1,7 @@
 import sys
+import logging
+
+from alma.shop import Shop
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -13,3 +16,9 @@ if __name__ == "__main__":
     else:
         sys.exit("The script works without parameters or just one")
 
+    # Start the shop
+    logging.basicConfig(level=logging.INFO)
+    print("Creation of the shop")
+    shop = Shop(speed)
+    shop.run()
+    print("End of the script")
