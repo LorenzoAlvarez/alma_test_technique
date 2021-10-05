@@ -96,7 +96,7 @@ class SellMessage(BaseMessage):
 
         We should save the list of "foobars" and foos the robot will sell
     """
-    def __init__(self, foobars: list, foos: list): 
+    def __init__(self, foobars: list): 
         """
             Constructor of the class
 
@@ -104,12 +104,8 @@ class SellMessage(BaseMessage):
         """
         # we must verify that len of foos is 6 times the len of foobars
         # If not, raise exception
-        print(6*len(foobars), len(foos))
-        if 6*len(foobars) != len(foos):
-            raise NotValidNumberFoosToSellException
         super().__init__(TypeMessage.send_job_sell)
         self.foobars = foobars
-        self.foos = foos
 
 
 class FinishedMineMessage(BaseMessage):
@@ -180,7 +176,7 @@ class FinishedSellMessage(BaseMessage):
             Constructor of the class
         """
         super().__init__(TypeMessage.job_finished_sell)
-        self.worker = id_robot
+        self.id_robot = id_robot
         self.amount = amout_of_money_gained
 
 

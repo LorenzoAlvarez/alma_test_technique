@@ -1,7 +1,7 @@
 from threading import Thread
 from queue import Queue
 from enum import Enum
-from alma.message.message import FinishedJoinMessage, JoinFooBarMessage, MineMessage, TypeMessage, FinishedMineMessage
+from alma.message.message import FinishedJoinMessage, FinishedSellMessage, JoinFooBarMessage, MineMessage, SellMessage, TypeMessage, FinishedMineMessage
 import random
 import time
 
@@ -30,6 +30,7 @@ class Robot(Thread):
     TIME_JOIN_FOO_BAR = 2
     TIME_SELL = 10
     PERCENT_SUCCESSFUL_CREATION_FOOBAR = 60
+    PRICE_FOOBAR = 1
 
     def __init__(self, id_robot, in_queue: Queue, out_queue: Queue, speed: int) -> None:
         super(Robot, self).__init__()
@@ -56,6 +57,9 @@ class Robot(Thread):
                 id_bar = message.id_bar
                 is_succesfully_done, id_object = self.process_foobar(id_foo, id_bar)
                 self.send_foobar_to_shop(is_succesfully_done, id_object)
+            elif isinstance(message, SellMessage):
+                money_gained = self.process_sell(message.foobars)
+                self.send_sold_message_to_shop(money_gained)
         return
 
     def process_foo(self):
@@ -85,7 +89,6 @@ class Robot(Thread):
         self.print_to_console("Process Bar")
         # If we change task, wait 5 units of times
         if self.last_task is not None and self.last_task != TypeTask.mine_bar:
-            
             time.sleep(self.TIME_CHANGE_ACTIVITY / self.speed)
         # mine bar cost between 0.5 and 2 units of time
         time.sleep(
@@ -106,6 +109,13 @@ class Robot(Thread):
         id_object = f"{id_foo}{id_bar}" if succesfully_created else id_foo
         self.print_to_console(f"Creating Foobar -> {'Success' if succesfully_created else 'Failed'}")
         return succesfully_created, id_object
+
+    def process_sell(self, foobars: list):
+        self.print_to_console("Process Selling")
+        if self.last_task is not None and self.last_task != TypeTask.sell:
+            time.sleep(self.TIME_CHANGE_ACTIVITY / self.speed)
+        time.sleep(self.TIME_SELL / self.speed)
+        return len(foobars) * self.PRICE_FOOBAR
 
     def send_foo_to_shop(self, id_foo: str):
         """
@@ -144,6 +154,15 @@ class Robot(Thread):
             id_object
         )
         self.out_queue.put(message_to_send)
+
+    def send_sold_message_to_shop(self, money_gained: int):
+        self.print_to_console(f"Save {money_gained}€ to Shop")
+        message_to_send = FinishedSellMessage(
+            self.id_robot,
+            money_gained
+        )
+        self.out_queue.put(message_to_send)
+        
 
     def print_to_console(self, console_message: str):
         """

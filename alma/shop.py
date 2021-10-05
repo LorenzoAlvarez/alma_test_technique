@@ -1,8 +1,10 @@
 from alma.message.message import (
     FinishedJoinMessage,
     FinishedMineMessage,
+    FinishedSellMessage,
     JoinFooBarMessage,
     MineMessage,
+    SellMessage,
     TypeMessage,
 )
 from alma.message.message_queue import ShopMessageQueue
@@ -22,6 +24,9 @@ class Shop:
     Including the Inventory class, that contains the different objects that
         are on stocks and the datastructure of messageQueue
     """
+
+    PRICE_ROBOT_MONEY = 3
+    PRICE_ROBOT_FOOS = 6
 
     def __init__(self, speed: int) -> None:
         """
@@ -52,6 +57,8 @@ class Shop:
                 self.process_receive_mine_message(message)
             elif isinstance(message, FinishedJoinMessage):
                 self.process_receive_join_foobar_message(message)
+            elif isinstance(message, FinishedSellMessage):
+                self.process_receive_sell_message(message)
             else:
                 continue
             self.send_next_job(message.id_robot)
@@ -78,11 +85,30 @@ class Shop:
         else:
             self.inventory.foo.append(message.id_object)
 
+    def process_receive_sell_message(self, message: FinishedSellMessage):
+        """
+        Method to take the money from sells
+
+        If we have enough -> we can buy new robots
+        """
+        self.money += message.amount
+        while self.money > self.PRICE_ROBOT_MONEY and \
+                len(self.inventory.foo) > self.PRICE_ROBOT_FOOS:
+            self.money -= self.PRICE_ROBOT_MONEY
+            for i in range(self.PRICE_ROBOT_FOOS):
+                self.inventory.foo.pop()
+            self.buy_new_robot()
+
     def send_next_job(self, id_robot):
         """
         Method that decides what task will do later
         """
-        if len(self.inventory.bar) > 0 and len(self.inventory.foo) > 0:
+        if len(self.inventory.foobar) > 3:
+            foobars = list()
+            while self.inventory.foobar and len(foobars) < 5:
+                foobars.append(self.inventory.foobar.pop())
+            message = SellMessage(foobars)
+        elif len(self.inventory.bar) > 0 and len(self.inventory.foo) > 0:
             foo = self.inventory.foo.pop()
             bar = self.inventory.bar.pop()
             message = JoinFooBarMessage(foo, bar)
@@ -108,12 +134,13 @@ class Shop:
         """
         Method that prints the inventory every time we receive a message
         """
-        print(f"------ SHOP UPDATE -------")
+        print("------ SHOP UPDATE -------")
         print(f"foo: {len(self.inventory.foo)}")
         print(f"bar: {len(self.inventory.bar)}")
         print(f"foobar: {len(self.inventory.foobar)}")
         print(f"Money: {self.money}")
-        print(f"--------------------------")
+        print(f"Robots: {self.robot_counter}")
+        print("--------------------------")
 
     def print_to_console(self, console_message: str):
         """
