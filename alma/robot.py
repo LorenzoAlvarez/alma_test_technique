@@ -1,7 +1,7 @@
 from threading import Thread
 from queue import Queue
 from enum import Enum
-from alma.message.message import FinishedJoinMessage, FinishedSellMessage, JoinFooBarMessage, MineMessage, SellMessage, TypeMessage, FinishedMineMessage
+from alma.message.message import FinishedJoinMessage, FinishedSellMessage, JoinFooBarMessage, MineMessage, RobotIsOff, SellMessage, TurnOffRobotMessage, TypeMessage, FinishedMineMessage
 import random
 import time
 
@@ -60,6 +60,12 @@ class Robot(Thread):
             elif isinstance(message, SellMessage):
                 money_gained = self.process_sell(message.foobars)
                 self.send_sold_message_to_shop(money_gained)
+            elif isinstance(message, TurnOffRobotMessage):
+                break
+            else:
+                continue
+        self.print_to_console("EXIT")
+        self.out_queue.put(RobotIsOff(self.id_robot))
         return
 
     def process_foo(self):
@@ -98,6 +104,7 @@ class Robot(Thread):
         id_bar = f"{self.id_robot}{self.counter_bar}"
         self.counter_bar += 1
         self.print_to_console(f"Creating Bar {id_bar}")
+        return id_bar
 
     def process_foobar(self, id_foo: str, id_bar: str):
         self.print_to_console("Process FooBar")
@@ -162,7 +169,6 @@ class Robot(Thread):
             money_gained
         )
         self.out_queue.put(message_to_send)
-        
 
     def print_to_console(self, console_message: str):
         """

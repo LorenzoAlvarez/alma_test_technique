@@ -4,7 +4,9 @@ from alma.message.message import (
     FinishedSellMessage,
     JoinFooBarMessage,
     MineMessage,
+    RobotIsOff,
     SellMessage,
+    TurnOffRobotMessage,
     TypeMessage,
 )
 from alma.message.message_queue import ShopMessageQueue
@@ -27,6 +29,7 @@ class Shop:
 
     PRICE_ROBOT_MONEY = 3
     PRICE_ROBOT_FOOS = 6
+    LIMIT_ROBOTS = 30
 
     def __init__(self, speed: int) -> None:
         """
@@ -42,6 +45,7 @@ class Shop:
         self.robot_counter = 0
         self.speed = speed
         self.money = 0
+        self.threads_exit_succesfully = 0
         # We start with two robots
         self.buy_new_robot()
         self.buy_new_robot()
@@ -50,7 +54,7 @@ class Shop:
         """
         Method that runs the shop
         """
-        while True:
+        while self.threads_exit_succesfully != self.robot_counter:
             self.print_to_console("waiting to receive message")
             message = self.message_queue.wait_message_from_robots()
             if isinstance(message, FinishedMineMessage):
@@ -59,10 +63,14 @@ class Shop:
                 self.process_receive_join_foobar_message(message)
             elif isinstance(message, FinishedSellMessage):
                 self.process_receive_sell_message(message)
+            elif isinstance(message, RobotIsOff):
+                self.print_to_console(self.threads_exit_succesfully)
+                self.threads_exit_succesfully += 1
             else:
                 continue
             self.send_next_job(message.id_robot)
             self.print_inventory()
+        self.print_to_console("EXIT")
 
     def process_receive_mine_message(self, message: FinishedMineMessage):
         """
@@ -95,7 +103,7 @@ class Shop:
         while self.money > self.PRICE_ROBOT_MONEY and \
                 len(self.inventory.foo) > self.PRICE_ROBOT_FOOS:
             self.money -= self.PRICE_ROBOT_MONEY
-            for i in range(self.PRICE_ROBOT_FOOS):
+            for _ in range(self.PRICE_ROBOT_FOOS):
                 self.inventory.foo.pop()
             self.buy_new_robot()
 
@@ -103,7 +111,9 @@ class Shop:
         """
         Method that decides what task will do later
         """
-        if len(self.inventory.foobar) > 3:
+        if self.robot_counter > self.LIMIT_ROBOTS:
+            message = TurnOffRobotMessage()
+        elif len(self.inventory.foobar) > 3:
             foobars = list()
             while self.inventory.foobar and len(foobars) < 5:
                 foobars.append(self.inventory.foobar.pop())

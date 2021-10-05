@@ -198,3 +198,4 @@ class RobotIsOff(BaseMessage):
     """
     def __init__(self, id_robot: int):
         super().__init__(TypeMessage.turn_off_done)
+        self.id_robot = id_robot
